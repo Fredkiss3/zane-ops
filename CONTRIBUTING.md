@@ -179,15 +179,6 @@ A quick look at the top-level files and directories you will see in this project
 
 6. **`openapi/schema.yaml`**: this file contains the openapi schema generated from the backend API.
 
-## 🏗️ Architecture of the project
-
-### Architecture of the DEV server
-
-> TODO
-
-### Architecture of the production app
-
-> TODO
 
 ## Missing a Feature?
 

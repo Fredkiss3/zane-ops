@@ -12,6 +12,9 @@ fi
 echo "Flushing the database..."
 source ./backend/venv/bin/activate && echo yes | python ./backend/manage.py flush
 
+echo "Running all migrations again..."
+python ./backend/manage.py migrate
+
 echo "Scaling down all zane-ops services..."
 services=$(docker service ls --filter label=zane-managed=true --format "{{.Name}}")
 for service in $services

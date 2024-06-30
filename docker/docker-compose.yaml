@@ -67,11 +67,11 @@ services:
     ports:
       - "6381:6379"
   db:
-    image: postgres:12-alpine
+    image: postgres:16-alpine
     container_name: zane-db
     restart: unless-stopped
     volumes:
-      - db-data:/var/lib/postgresql/data
+      - pg-data:/var/lib/postgresql/data
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
@@ -94,7 +94,7 @@ services:
     volumes:
       - redisinsight:/data
 volumes:
-  db-data:
+  pg-data:
   redis-data:
   redisinsight:
   caddy-data:
