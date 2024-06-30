@@ -1,4 +1,4 @@
-FROM python:3.11.7
+FROM python:3.11.7@sha256:63bec515ae23ef6b4563d29e547e81c15d80bf41eff5969cb43d034d333b63b8
 
 # set environment variables
 ENV PYTHONDONTWRITEBYTECODE 1
