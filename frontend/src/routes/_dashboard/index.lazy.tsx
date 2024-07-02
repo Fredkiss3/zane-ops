@@ -10,7 +10,6 @@ import {
   Trash
 } from "lucide-react";
 import { withAuthRedirect } from "~/components/helper/auth-redirect";
-import { useAuthUser } from "~/components/helper/use-auth-user";
 import { MetaTitle } from "~/components/meta-title";
 import { Input } from "~/components/ui/input";
 
@@ -52,24 +51,8 @@ import { formattedDate } from "~/utils";
 
 export const Route = createFileRoute("/_dashboard/")({
   validateSearch: (search) => projectSearchSchema.parse(search),
-  component: withAuthRedirect(AuthedView)
+  component: withAuthRedirect(ProjectList)
 });
-
-function AuthedView() {
-  const query = useAuthUser();
-  const user = query.data?.data?.user;
-
-  if (!user) {
-    return null;
-  }
-
-  return (
-    <>
-      <MetaTitle title="Create Project" />
-      <ProjectList />
-    </>
-  );
-}
 
 export function ProjectList() {
   const {
@@ -135,6 +118,7 @@ export function ProjectList() {
 
   return (
     <main>
+      <MetaTitle title="Dashboard" />
       <section>
         <div className="md:my-10 my-5">
           <h1 className="text-3xl font-bold">Overview</h1>

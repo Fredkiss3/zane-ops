@@ -50,6 +50,7 @@
     --status-success: #bbf7d0 ;
     --status-error: #fecaca;
     --status-warning: #fef08a ;
+    --link: #2563eb;
   }
 
   @media (prefers-color-scheme: dark) {
@@ -75,6 +76,7 @@
       --toggle: 164 43% 2%;
       --ring: 164 61% 70%;
       --loader: white;
+      --link:#60a5fa;
     }
   }
 

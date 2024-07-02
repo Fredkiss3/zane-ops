@@ -5,7 +5,7 @@ export const apiClient = createClient<paths>({
   baseUrl: "/"
 });
 
-type RequestMethod = "post" | "put" | "get" | "delete";
+type RequestMethod = "post" | "put" | "get" | "delete" | "patch";
 
 type ExtractRequestBody<
   TPaths,
@@ -14,7 +14,7 @@ type ExtractRequestBody<
 > = TPaths[TPath] extends Record<TMethod, infer TOperation>
   ? // Check if there's a 'post' or 'put' method
     TOperation extends {
-      requestBody: { content: { "application/json": infer TRequestBody } };
+      requestBody?: { content: { "application/json": infer TRequestBody } };
     } // Navigate directly to '["content"]["application/json"]'
     ? TRequestBody
     : never

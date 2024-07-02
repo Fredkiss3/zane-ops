@@ -41,7 +41,7 @@ import {
   SheetTrigger
 } from "~/components/ui/sheet";
 import { userKeys } from "~/key-factories";
-import { deleteCookie, getCookie, getCsrfTokenHeader } from "~/utils";
+import { deleteCookie, getCsrfTokenHeader } from "~/utils";
 
 export const Route = createFileRoute("/_dashboard")({
   component: () => (

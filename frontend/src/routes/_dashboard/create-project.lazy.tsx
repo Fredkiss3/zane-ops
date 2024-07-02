@@ -4,7 +4,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { AlertCircle } from "lucide-react";
 import { type RequestInput, apiClient } from "~/api/client";
 import { withAuthRedirect } from "~/components/helper/auth-redirect";
-import { useAuthUser } from "~/components/helper/use-auth-user";
+
 import { MetaTitle } from "~/components/meta-title";
 import { Alert, AlertDescription, AlertTitle } from "~/components/ui/alert";
 import { Button } from "~/components/ui/button";
@@ -14,24 +14,8 @@ import { getFormErrorsFromResponseData } from "~/lib/utils";
 import { getCsrfTokenHeader } from "~/utils";
 
 export const Route = createFileRoute("/_dashboard/create-project")({
-  component: withAuthRedirect(AuthedView)
+  component: withAuthRedirect(CreateProject)
 });
-
-function AuthedView() {
-  const query = useAuthUser();
-  const user = query.data?.data?.user;
-
-  if (!user) {
-    return null;
-  }
-
-  return (
-    <>
-      <MetaTitle title="Create Project" />
-      <CreateProject />
-    </>
-  );
-}
 
 export function CreateProject() {
   const navigate = useNavigate();
@@ -47,7 +31,7 @@ export function CreateProject() {
 
       if (error) return error;
       if (data) {
-        navigate({ to: "/" });
+        navigate({ to: `/project/${data.slug}` });
         return;
       }
     }
@@ -57,13 +41,14 @@ export function CreateProject() {
 
   return (
     <main>
+      <MetaTitle title="Create Project" />
       <Form.Root
-        action={(formData) =>
+        action={(formData) => {
           mutate({
             slug: formData.get("slug")?.toString().trim(),
             description: formData.get("description")?.toString()
-          })
-        }
+          });
+        }}
         className="flex h-[60vh] flex-grow justify-center items-center"
       >
         <div className="card flex lg:w-[30%] md:w-[50%] w-full flex-col gap-3">
