@@ -1,9 +1,15 @@
+import asyncio
 import time
+import traceback
+from datetime import datetime
 from typing import Any
 
+from asgiref.sync import sync_to_async
 from django.conf import settings
 from django.db import transaction, IntegrityError
 from django.db.models import Q, QuerySet
+from django.http import StreamingHttpResponse
+from django.utils.dateparse import parse_datetime
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import (
     extend_schema,
@@ -17,6 +23,7 @@ from rest_framework.generics import ListAPIView, RetrieveAPIView
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.serializers import Serializer
+from rest_framework.utils import json
 from rest_framework.views import APIView
 
 from . import EMPTY_PAGINATED_RESPONSE
@@ -56,6 +63,7 @@ from ..serializers import (
     PortConfigurationSerializer,
     DockerEnvVariableSerializer,
     ErrorResponse409Serializer,
+    SimpleLogSerializer,
 )
 from ..tasks import (
     delete_resources_for_docker_service,
@@ -682,6 +690,127 @@ class DockerServiceDeploymentSingleAPIView(RetrieveAPIView):
             raise exceptions.NotFound(
                 detail=f"A deployment with the hash `{deployment_hash}` does not exist for this service."
             )
+
+
+async def docker_service_deployment_logs(
+    request: Request,
+    project_slug: str,
+    service_slug: str,
+    deployment_hash: str,
+):
+    if request.method.upper() != "GET":
+        return Response(
+            status=status.HTTP_405_METHOD_NOT_ALLOWED,
+            data={"message": "Only GET methods are allowed"},
+        )
+
+    limit = int(request.GET.get("limit", 50))
+
+    @sync_to_async
+    def fetch_logs(
+        last_time: datetime, limit: int, deployment: DockerDeployment
+    ) -> list[dict]:
+        queryset = deployment.logs.order_by("-time")
+        if last_time:
+            queryset = queryset.filter(time__gt=last_time)
+
+        queryset = queryset[:limit]
+        if len(queryset) > 0:
+            return list(reversed([SimpleLogSerializer(log).data for log in queryset]))
+        return []
+
+    @sync_to_async
+    def get_deployment():
+        return (
+            DockerDeployment.objects.filter(
+                hash=deployment_hash,
+                service__slug=service_slug,
+                service__project__slug=project_slug,
+            )
+            .select_related("service", "service__project")
+            .first()
+        )
+
+    deployment = await get_deployment()
+    async def event_stream():
+        last_fetched_time = None
+
+        while True:
+            print(f"{time.monotonic()} fetching logs")
+            try:
+                new_logs = await fetch_logs(last_fetched_time, limit, deployment)
+                if len(new_logs) > 0:
+                    yield f"data: {json.dumps(new_logs)}\n\n"
+                    last_fetched_time = parse_datetime(
+                        new_logs[len(new_logs) - 1]["time"]
+                    )
+            except Exception as e:
+                print(f"Exception: {e=}")
+                print(traceback.format_exc())
+            await asyncio.sleep(1)
+
+    return StreamingHttpResponse(
+        event_stream(),
+        content_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+            "Connection": "keep-alive",
+        },
+    )
+
+
+#
+# class DockerServiceDeploymentLogsAPIView(View):
+#     # serializer_class = DockerServiceDeploymentSerializer
+#     permission_classes = [permissions.AllowAny]
+#
+#     def fetch_logs(self, last_id: int, limit: int, deployment: DockerDeployment):
+#         queryset = deployment.logs.order_by("id")
+#
+#         if last_id:
+#             queryset = queryset.filter(id__gt=last_id)
+#
+#         return queryset[:limit]
+#
+#     # @extend_schema(
+#     #     # request=DockerServiceCreateRequestSerializer,
+#     #     operation_id="getDockerDeploymentLogs",
+#     # )
+#     def get(
+#         self,
+#         request: Request,
+#         project_slug: str,
+#         service_slug: str,
+#         deployment_hash: str,
+#     ):
+#         last_id = request.GET.get("last_id")
+#         limit = int(request.GET.get("limit", 50))
+#
+#         deployment = DockerDeployment.objects.get(
+#             hash=deployment_hash,
+#             service__slug=service_slug,
+#             service__project__slug=project_slug,
+#         )
+#
+#         def event_stream():
+#             last_fetched_id = last_id
+#
+#             while True:
+#                 new_logs = self.fetch_logs(last_fetched_id, limit, deployment)
+#                 if new_logs:
+#                     yield json.dumps(
+#                         [SimpleLogSerializer(log).data for log in new_logs]
+#                     )
+#                     last_fetched_id = new_logs[len(new_logs) - 1].id
+#                 time.sleep(1)  # Wait for 1 second before next check
+#
+#         response = StreamingHttpResponse(
+#             event_stream(), content_type="text/event-stream"
+#         )
+#         response["Cache-Control"] = "no-cache"
+#         response["X-Accel-Buffering"] = "no"
+#         return response
 
 
 class ArchiveDockerServiceAPIView(APIView):

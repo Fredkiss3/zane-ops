@@ -611,6 +611,9 @@ class DockerDeployment(BaseDeployment):
     def http_logs(self):
         return HttpLog.objects.filter(deployment_id=self.hash)
 
+    def __str__(self):
+        return f"DockerDeployment(hash={self.hash}, service={self.service.slug}, project={self.service.project.slug})"
+
 
 class BaseDeploymentChange(TimestampedModel):
     class ChangeType(models.TextChoices):

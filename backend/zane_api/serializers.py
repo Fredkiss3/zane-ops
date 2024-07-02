@@ -182,3 +182,17 @@ class DockerServiceDeploymentSerializer(ModelSerializer):
             "service_snapshot",
             "changes",
         ]
+
+
+class SimpleLogSerializer(ModelSerializer):
+    class Meta:
+        model = models.SimpleLog
+        fields = [
+            "id",
+            "content",
+            "time",
+            "level",
+            "deployment_id",
+            "service_id",
+            "source",
+        ]

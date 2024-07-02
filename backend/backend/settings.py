@@ -71,6 +71,7 @@ CSRF_TRUSTED_ORIGINS = (
     if ENVIRONMENT != PRODUCTION_ENV
     else [f"https://{ZANE_APP_DOMAIN}"]
 )
+CORS_ALLOW_ALL_ORIGINS = True if ENVIRONMENT != PRODUCTION_ENV else CSRF_TRUSTED_ORIGINS
 
 CACHES = {
     "default": {
@@ -85,6 +86,7 @@ SESSION_EXTEND_PERIOD = 7
 # Application definition
 
 INSTALLED_APPS = [
+    "daphne",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -92,6 +94,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "zane_api.apps.ZaneApiConfig",
+    "corsheaders",
     "rest_framework",
     "rest_framework.authtoken",
     "drf_spectacular",
@@ -102,6 +105,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -130,6 +134,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "backend.wsgi.application"
+ASGI_APPLICATION = "backend.asgi.application"
 
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
@@ -333,7 +338,9 @@ ZANE_FRONT_SERVICE_INTERNAL_DOMAIN = (
     if ENVIRONMENT != PRODUCTION_ENV
     else f"zane-front.{ZANE_INTERNAL_DOMAIN}:80"
 )
-ZANE_FLUENTD_HOST = os.environ.get("ZANE_FLUENTD_HOST", "unix://$HOME/.fluentd/fluentd.sock")
+ZANE_FLUENTD_HOST = os.environ.get(
+    "ZANE_FLUENTD_HOST", "unix://$HOME/.fluentd/fluentd.sock"
+)
 
 DEFAULT_HEALTHCHECK_TIMEOUT = 30  # seconds
 DEFAULT_HEALTHCHECK_INTERVAL = 30  # seconds

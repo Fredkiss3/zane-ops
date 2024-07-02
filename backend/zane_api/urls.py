@@ -130,4 +130,10 @@ urlpatterns += [
         views.DockerServiceDeploymentSingleAPIView.as_view(),
         name="services.docker.deployment_single",
     ),
+    re_path(
+        r"^projects/(?P<project_slug>[a-z0-9]+(?:-[a-z0-9]+)*)/service-details/docker"
+        r"/(?P<service_slug>[a-z0-9]+(?:-[a-z0-9]+)*)/deployments/(?P<deployment_hash>[a-zA-Z0-9-_]+)/logs/?$",
+        views.docker_service_deployment_logs,
+        name="services.docker.deployment_logs",
+    ),
 ]

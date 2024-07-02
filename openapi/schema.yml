@@ -647,6 +647,80 @@ paths:
               schema:
                 $ref: '#/components/schemas/GetRootDomain'
           description: ''
+  /api/logs/tail/:
+    post:
+      operationId: collectContainerLogs
+      tags:
+      - logs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/DockerContainerLogRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/DockerContainerLogRequest'
+          multipart/form-data:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/DockerContainerLogRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CollectContainerLogsErrorResponse400'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse401'
+              examples:
+                AuthenticationFailed:
+                  value:
+                    type: client_error
+                    errors:
+                    - code: authentication_failed
+                      detail: Incorrect authentication credentials.
+                      attr: null
+                NotAuthenticated:
+                  value:
+                    type: client_error
+                    errors:
+                    - code: not_authenticated
+                      detail: Authentication credentials were not provided.
+                      attr: null
+          description: ''
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse429'
+              examples:
+                Throttled:
+                  value:
+                    type: client_error
+                    errors:
+                    - code: throttled
+                      detail: Request was throttled.
+                      attr: null
+          description: ''
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DockerContainerLogsResponse'
+          description: ''
   /api/projects/:
     get:
       operationId: projects_list
@@ -1664,6 +1738,94 @@ paths:
               schema:
                 $ref: '#/components/schemas/DockerServiceDeployment'
           description: ''
+  /api/projects/{project_slug}/service-details/docker/{service_slug}/deployments/{deployment_hash}/logs/:
+    get:
+      operationId: projects_service_details_docker_deployments_logs_retrieve
+      parameters:
+      - in: path
+        name: deployment_hash
+        schema:
+          type: string
+          pattern: ^[a-zA-Z0-9-_]+$
+        required: true
+      - in: path
+        name: project_slug
+        schema:
+          type: string
+          pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+        required: true
+      - in: path
+        name: service_slug
+        schema:
+          type: string
+          pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+        required: true
+      tags:
+      - projects
+      security:
+      - cookieAuth: []
+      responses:
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectsServiceDetailsDockerDeploymentsLogsRetrieveErrorResponse400'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse401'
+              examples:
+                AuthenticationFailed:
+                  value:
+                    type: client_error
+                    errors:
+                    - code: authentication_failed
+                      detail: Incorrect authentication credentials.
+                      attr: null
+                NotAuthenticated:
+                  value:
+                    type: client_error
+                    errors:
+                    - code: not_authenticated
+                      detail: Authentication credentials were not provided.
+                      attr: null
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse404'
+              examples:
+                NotFound:
+                  value:
+                    type: client_error
+                    errors:
+                    - code: not_found
+                      detail: Not found.
+                      attr: null
+          description: ''
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse429'
+              examples:
+                Throttled:
+                  value:
+                    type: client_error
+                    errors:
+                    - code: throttled
+                      detail: Request was throttled.
+                      attr: null
+          description: ''
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DockerServiceDeployment'
+          description: ''
   /api/projects/{slug}/:
     get:
       operationId: getSingleProject
@@ -2184,6 +2346,263 @@ components:
       - client_error
       type: string
       description: '* `client_error` - Client Error'
+    CollectContainerLogsError:
+      oneOf:
+      - $ref: '#/components/schemas/CollectContainerLogsNonFieldErrorsErrorComponent'
+      - $ref: '#/components/schemas/CollectContainerLogsINDEXNonFieldErrorsErrorComponent'
+      - $ref: '#/components/schemas/CollectContainerLogsINDEXLogErrorComponent'
+      - $ref: '#/components/schemas/CollectContainerLogsINDEXContainerIdErrorComponent'
+      - $ref: '#/components/schemas/CollectContainerLogsINDEXContainerNameErrorComponent'
+      - $ref: '#/components/schemas/CollectContainerLogsINDEXTimeErrorComponent'
+      - $ref: '#/components/schemas/CollectContainerLogsINDEXTagErrorComponent'
+      - $ref: '#/components/schemas/CollectContainerLogsINDEXSourceErrorComponent'
+      discriminator:
+        propertyName: attr
+        mapping:
+          non_field_errors: '#/components/schemas/CollectContainerLogsNonFieldErrorsErrorComponent'
+          INDEX.non_field_errors: '#/components/schemas/CollectContainerLogsINDEXNonFieldErrorsErrorComponent'
+          INDEX.log: '#/components/schemas/CollectContainerLogsINDEXLogErrorComponent'
+          INDEX.container_id: '#/components/schemas/CollectContainerLogsINDEXContainerIdErrorComponent'
+          INDEX.container_name: '#/components/schemas/CollectContainerLogsINDEXContainerNameErrorComponent'
+          INDEX.time: '#/components/schemas/CollectContainerLogsINDEXTimeErrorComponent'
+          INDEX.tag: '#/components/schemas/CollectContainerLogsINDEXTagErrorComponent'
+          INDEX.source: '#/components/schemas/CollectContainerLogsINDEXSourceErrorComponent'
+    CollectContainerLogsErrorResponse400:
+      oneOf:
+      - $ref: '#/components/schemas/CollectContainerLogsValidationError'
+      - $ref: '#/components/schemas/ParseErrorResponse'
+      discriminator:
+        propertyName: type
+        mapping:
+          validation_error: '#/components/schemas/CollectContainerLogsValidationError'
+          client_error: '#/components/schemas/ParseErrorResponse'
+    CollectContainerLogsINDEXContainerIdErrorComponent:
+      type: object
+      properties:
+        attr:
+          enum:
+          - INDEX.container_id
+          type: string
+          description: '* `INDEX.container_id` - INDEX.container_id'
+        code:
+          enum:
+          - blank
+          - invalid
+          - 'null'
+          - null_characters_not_allowed
+          - required
+          - surrogate_characters_not_allowed
+          type: string
+          description: |-
+            * `blank` - blank
+            * `invalid` - invalid
+            * `null` - null
+            * `null_characters_not_allowed` - null_characters_not_allowed
+            * `required` - required
+            * `surrogate_characters_not_allowed` - surrogate_characters_not_allowed
+        detail:
+          type: string
+      required:
+      - attr
+      - code
+      - detail
+    CollectContainerLogsINDEXContainerNameErrorComponent:
+      type: object
+      properties:
+        attr:
+          enum:
+          - INDEX.container_name
+          type: string
+          description: '* `INDEX.container_name` - INDEX.container_name'
+        code:
+          enum:
+          - blank
+          - invalid
+          - 'null'
+          - null_characters_not_allowed
+          - required
+          - surrogate_characters_not_allowed
+          type: string
+          description: |-
+            * `blank` - blank
+            * `invalid` - invalid
+            * `null` - null
+            * `null_characters_not_allowed` - null_characters_not_allowed
+            * `required` - required
+            * `surrogate_characters_not_allowed` - surrogate_characters_not_allowed
+        detail:
+          type: string
+      required:
+      - attr
+      - code
+      - detail
+    CollectContainerLogsINDEXLogErrorComponent:
+      type: object
+      properties:
+        attr:
+          enum:
+          - INDEX.log
+          type: string
+          description: '* `INDEX.log` - INDEX.log'
+        code:
+          enum:
+          - invalid
+          - 'null'
+          - null_characters_not_allowed
+          - required
+          - surrogate_characters_not_allowed
+          type: string
+          description: |-
+            * `invalid` - invalid
+            * `null` - null
+            * `null_characters_not_allowed` - null_characters_not_allowed
+            * `required` - required
+            * `surrogate_characters_not_allowed` - surrogate_characters_not_allowed
+        detail:
+          type: string
+      required:
+      - attr
+      - code
+      - detail
+    CollectContainerLogsINDEXNonFieldErrorsErrorComponent:
+      type: object
+      properties:
+        attr:
+          enum:
+          - INDEX.non_field_errors
+          type: string
+          description: '* `INDEX.non_field_errors` - INDEX.non_field_errors'
+        code:
+          enum:
+          - invalid
+          - 'null'
+          - required
+          type: string
+          description: |-
+            * `invalid` - invalid
+            * `null` - null
+            * `required` - required
+        detail:
+          type: string
+      required:
+      - attr
+      - code
+      - detail
+    CollectContainerLogsINDEXSourceErrorComponent:
+      type: object
+      properties:
+        attr:
+          enum:
+          - INDEX.source
+          type: string
+          description: '* `INDEX.source` - INDEX.source'
+        code:
+          enum:
+          - invalid_choice
+          - 'null'
+          - required
+          type: string
+          description: |-
+            * `invalid_choice` - invalid_choice
+            * `null` - null
+            * `required` - required
+        detail:
+          type: string
+      required:
+      - attr
+      - code
+      - detail
+    CollectContainerLogsINDEXTagErrorComponent:
+      type: object
+      properties:
+        attr:
+          enum:
+          - INDEX.tag
+          type: string
+          description: '* `INDEX.tag` - INDEX.tag'
+        code:
+          enum:
+          - blank
+          - invalid
+          - 'null'
+          - null_characters_not_allowed
+          - required
+          - surrogate_characters_not_allowed
+          type: string
+          description: |-
+            * `blank` - blank
+            * `invalid` - invalid
+            * `null` - null
+            * `null_characters_not_allowed` - null_characters_not_allowed
+            * `required` - required
+            * `surrogate_characters_not_allowed` - surrogate_characters_not_allowed
+        detail:
+          type: string
+      required:
+      - attr
+      - code
+      - detail
+    CollectContainerLogsINDEXTimeErrorComponent:
+      type: object
+      properties:
+        attr:
+          enum:
+          - INDEX.time
+          type: string
+          description: '* `INDEX.time` - INDEX.time'
+        code:
+          enum:
+          - date
+          - invalid
+          - make_aware
+          - 'null'
+          - overflow
+          - required
+          type: string
+          description: |-
+            * `date` - date
+            * `invalid` - invalid
+            * `make_aware` - make_aware
+            * `null` - null
+            * `overflow` - overflow
+            * `required` - required
+        detail:
+          type: string
+      required:
+      - attr
+      - code
+      - detail
+    CollectContainerLogsNonFieldErrorsErrorComponent:
+      type: object
+      properties:
+        attr:
+          enum:
+          - non_field_errors
+          type: string
+          description: '* `non_field_errors` - non_field_errors'
+        code:
+          enum:
+          - not_a_list
+          type: string
+          description: '* `not_a_list` - not_a_list'
+        detail:
+          type: string
+      required:
+      - attr
+      - code
+      - detail
+    CollectContainerLogsValidationError:
+      type: object
+      properties:
+        type:
+          $ref: '#/components/schemas/ValidationErrorEnum'
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/CollectContainerLogsError'
+      required:
+      - errors
+      - type
     CreateDockerServiceCredentialsNonFieldErrorsErrorComponent:
       type: object
       properties:
@@ -2532,6 +2951,44 @@ components:
       - field
       - new_value
       - field
+    DockerContainerLogRequest:
+      type: object
+      properties:
+        log:
+          type: string
+        container_id:
+          type: string
+          minLength: 1
+        container_name:
+          type: string
+          minLength: 1
+        time:
+          type: string
+          format: date-time
+        tag:
+          type: string
+          minLength: 1
+        source:
+          $ref: '#/components/schemas/SourceEnum'
+      required:
+      - container_id
+      - container_name
+      - log
+      - source
+      - tag
+      - time
+    DockerContainerLogsResponse:
+      type: object
+      properties:
+        simple_logs_inserted:
+          type: integer
+          minimum: 0
+        http_logs_inserted:
+          type: integer
+          minimum: 0
+      required:
+      - http_logs_inserted
+      - simple_logs_inserted
     DockerCredential:
       type: object
       properties:
@@ -3837,6 +4294,13 @@ components:
       required:
       - errors
       - type
+    ProjectsServiceDetailsDockerDeploymentsLogsRetrieveErrorResponse400:
+      oneOf:
+      - $ref: '#/components/schemas/ParseErrorResponse'
+      discriminator:
+        propertyName: type
+        mapping:
+          client_error: '#/components/schemas/ParseErrorResponse'
     ProjectsServiceDetailsDockerDeploymentsRetrieveErrorResponse400:
       oneOf:
       - $ref: '#/components/schemas/ParseErrorResponse'
@@ -4547,6 +5011,14 @@ components:
       description: |-
         * `BLUE` - Blue
         * `GREEN` - Green
+    SourceEnum:
+      enum:
+      - stdout
+      - stderr
+      type: string
+      description: |-
+        * `stdout` - standard ouput
+        * `stderr` - standard error
     StatusEnum:
       enum:
       - QUEUED
